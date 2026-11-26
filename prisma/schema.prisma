@@ -1,0 +1,397 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Difficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum LabStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum MappingStatus {
+  SUSPECTED
+  CONFIRMED
+}
+
+enum QueryLang {
+  SPL
+  KQL
+  EQL
+  SIGMA
+}
+
+enum Severity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ValidationStatus {
+  DRAFT
+  TESTING
+  VALIDATED
+}
+
+enum CoverageStatus {
+  NOT_PRACTICED
+  OBSERVED
+  INVESTIGATED
+  DETECTION_CREATED
+  DETECTION_VALIDATED
+}
+
+// ---------- MITRE (versioned, imported from STIX 2.1) ----------
+
+model AttackVersion {
+  id         String      @id @default(cuid())
+  version    String      @unique
+  domain     String      @default("enterprise-attack")
+  importedAt DateTime    @default(now())
+  tactics    Tactic[]
+  techniques Technique[]
+}
+
+model Tactic {
+  id          String @id @default(cuid())
+  versionId   String
+  stixId      String
+  shortname   String
+  attackId    String
+  name        String
+  description String @default("")
+  order       Int    @default(0)
+
+  version    AttackVersion     @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  techniques TechniqueTactic[]
+
+  @@unique([versionId, attackId])
+}
+
+model Technique {
+  id             String   @id @default(cuid())
+  versionId      String
+  stixId         String
+  attackId       String
+  name           String
+  description    String   @default("")
+  platforms      String[]
+  detection      String   @default("")
+  dataSources    String[]
+  isSubtechnique Boolean  @default(false)
+  parentAttackId String?
+  revoked        Boolean  @default(false)
+  deprecated     Boolean  @default(false)
+
+  version   AttackVersion       @relation(fields: [versionId], references: [id], onDelete: Cascade)
+  tactics   TechniqueTactic[]
+  notes     String              @default("")
+  mappings  TechniqueMapping[]
+  queries   QueryTechnique[]
+  rules     RuleTechnique[]
+  playbooks PlaybookTechnique[]
+  coverage  CoverageOverride?
+  samples   SampleTechnique[]
+
+  @@unique([versionId, attackId])
+  @@index([attackId])
+}
+
+model TechniqueTactic {
+  techniqueId String
+  tacticId    String
+
+  technique Technique @relation(fields: [techniqueId], references: [id], onDelete: Cascade)
+  tactic    Tactic    @relation(fields: [tacticId], references: [id], onDelete: Cascade)
+
+  @@id([techniqueId, tacticId])
+}
+
+// ---------- Labs & Investigations ----------
+
+model Lab {
+  id          String     @id @default(cuid())
+  name        String
+  source      String
+  siem        String
+  scenario    String     @default("")
+  dataSources String[]
+  difficulty  Difficulty @default(INTERMEDIATE)
+  status      LabStatus  @default(PLANNED)
+  tags        String[]
+  notes       String     @default("")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  investigations Investigation[]
+}
+
+model Investigation {
+  id         String   @id @default(cuid())
+  title      String
+  labId      String?
+  hypothesis String   @default("")
+  objectives String   @default("")
+  siem       String   @default("")
+  queriesRun String   @default("")
+  findings   String   @default("")
+  conclusion String   @default("")
+  lessons    String   @default("")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  lab      Lab?               @relation(fields: [labId], references: [id], onDelete: SetNull)
+  evidence Evidence[]
+  timeline TimelineEvent[]
+  mappings TechniqueMapping[]
+  samples  MalwareSample[]
+
+  @@index([labId])
+}
+
+model Evidence {
+  id              String    @id @default(cuid())
+  investigationId String
+  title           String
+  description     String    @default("")
+  source          String    @default("")
+  raw             String    @default("")
+  collectedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  investigation Investigation      @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+  mappings      TechniqueMapping[]
+  artifacts     Artifact[]
+  timeline      TimelineEvent[]
+
+  @@index([investigationId])
+}
+
+model TimelineEvent {
+  id              String   @id @default(cuid())
+  investigationId String
+  evidenceId      String?
+  occurredAt      DateTime
+  source          String   @default("")
+  description     String
+
+  investigation Investigation @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+  evidence      Evidence?     @relation(fields: [evidenceId], references: [id], onDelete: SetNull)
+
+  @@index([investigationId])
+  @@index([occurredAt])
+}
+
+model Artifact {
+  id         String @id @default(cuid())
+  evidenceId String
+  kind       String
+  value      String
+
+  evidence Evidence @relation(fields: [evidenceId], references: [id], onDelete: Cascade)
+
+  @@index([kind, value])
+}
+
+// CONFIRMED requires evidenceId (service layer validation).
+
+model TechniqueMapping {
+  id              String        @id @default(cuid())
+  investigationId String
+  techniqueId     String
+  evidenceId      String?
+  status          MappingStatus @default(SUSPECTED)
+  confidence      Int           @default(50)
+  rationale       String        @default("")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  investigation Investigation @relation(fields: [investigationId], references: [id], onDelete: Cascade)
+  technique     Technique     @relation(fields: [techniqueId], references: [id])
+  evidence      Evidence?     @relation(fields: [evidenceId], references: [id], onDelete: SetNull)
+
+  @@index([techniqueId, status])
+  @@index([investigationId])
+}
+
+// ---------- Queries, Rules & Playbooks ----------
+
+model HuntingQuery {
+  id              String    @id @default(cuid())
+  title           String
+  content         String
+  language        QueryLang
+  purpose         String    @default("")
+  dataSources     String[]
+  expectedResults String    @default("")
+  falsePositives  String    @default("")
+  notes           String    @default("")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  techniques QueryTechnique[]
+  playbooks  PlaybookQuery[]
+}
+
+model DetectionRule {
+  id             String           @id @default(cuid())
+  name           String
+  sigma          String
+  yara           String           @default("")
+  translations   Json             @default("{}")
+  logSource      String           @default("")
+  telemetry      String           @default("")
+  falsePositives String           @default("")
+  severity       Severity         @default(MEDIUM)
+  validation     ValidationStatus @default(DRAFT)
+  references     String[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  techniques RuleTechnique[]
+  testLogs   RuleTestLog[]
+}
+
+model Playbook {
+  id                 String   @id @default(cuid())
+  title              String
+  hypothesis         String   @default("")
+  objectives         String   @default("")
+  telemetry          String   @default("")
+  steps              Json     @default("[]")
+  expectedFindings   String   @default("")
+  conclusionCriteria String   @default("")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  techniques PlaybookTechnique[]
+  queries    PlaybookQuery[]
+}
+
+model QueryTechnique {
+  queryId     String
+  techniqueId String
+
+  query     HuntingQuery @relation(fields: [queryId], references: [id], onDelete: Cascade)
+  technique Technique    @relation(fields: [techniqueId], references: [id], onDelete: Cascade)
+
+  @@id([queryId, techniqueId])
+}
+
+model RuleTechnique {
+  ruleId      String
+  techniqueId String
+
+  rule      DetectionRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  technique Technique     @relation(fields: [techniqueId], references: [id], onDelete: Cascade)
+
+  @@id([ruleId, techniqueId])
+}
+
+model PlaybookTechnique {
+  playbookId  String
+  techniqueId String
+
+  playbook  Playbook  @relation(fields: [playbookId], references: [id], onDelete: Cascade)
+  technique Technique @relation(fields: [techniqueId], references: [id], onDelete: Cascade)
+
+  @@id([playbookId, techniqueId])
+}
+
+model PlaybookQuery {
+  playbookId String
+  queryId    String
+
+  playbook Playbook     @relation(fields: [playbookId], references: [id], onDelete: Cascade)
+  query    HuntingQuery @relation(fields: [queryId], references: [id], onDelete: Cascade)
+
+  @@id([playbookId, queryId])
+}
+
+// ---------- Coverage ----------
+
+model CoverageOverride {
+  techniqueId String         @id
+  status      CoverageStatus
+
+  technique Technique @relation(fields: [techniqueId], references: [id], onDelete: Cascade)
+}
+
+// ---------- Malware Analysis & Samples ----------
+
+model MalwareSample {
+  id              String   @id @default(cuid())
+  name            String
+  md5             String   @default("")
+  sha1            String   @default("")
+  sha256          String   @default("")
+  fileType        String   @default("")
+  fileSize        Int?
+  source          String   @default("")
+  family          String   @default("")
+  classification  String   @default("trojan")
+  firstSeen       DateTime?
+  tags            String[]
+  notes           String   @default("")
+
+  // Static Analysis
+  imports         String   @default("")
+  strings         String   @default("")
+  packer          String   @default("")
+  entropy         Float?
+
+  // Behavioral / Dynamic Analysis
+  c2Servers       String[]
+  droppedFiles    String[]
+  registryChanges String   @default("")
+  networkActivity String   @default("")
+  persistence     String   @default("")
+
+  investigationId String?
+  investigation   Investigation? @relation(fields: [investigationId], references: [id], onDelete: SetNull)
+  techniques      SampleTechnique[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([sha256])
+  @@index([family])
+}
+
+model SampleTechnique {
+  sampleId    String
+  techniqueId String
+
+  sample    MalwareSample @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+  technique Technique     @relation(fields: [techniqueId], references: [id], onDelete: Cascade)
+
+  @@id([sampleId, techniqueId])
+}
+
+model RuleTestLog {
+  id          String   @id @default(cuid())
+  ruleId      String
+  testedAt    DateTime @default(now())
+  environment String   @default("")
+  result      String   @default("")
+  notes       String   @default("")
+  testedBy    String   @default("Ahmed Alaa")
+
+  rule DetectionRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@index([ruleId])
+}

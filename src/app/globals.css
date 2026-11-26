@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-ink: 248 250 252;
+  --bg-panel: 255 255 255;
+  --bg-raised: 241 245 249;
+  --line: 203 213 225;
+  --text: 15 23 42;
+  --text-muted: 100 116 139;
+}
+
+.dark {
+  --bg-ink: 13 17 23;
+  --bg-panel: 20 26 34;
+  --bg-raised: 27 35 48;
+  --line: 38 48 61;
+  --text: 230 237 243;
+  --text-muted: 138 151 168;
+}
+
+body {
+  @apply bg-ink text-text font-sans antialiased transition-colors duration-150;
+}
+
+/* Subtle scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-line rounded;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-muted;
+}
+
+::selection {
+  @apply bg-steel/30 text-text;
+}
+
+@layer components {
+  .panel {
+    @apply bg-panel border border-line rounded-md;
+  }
+  .panel-hover {
+    @apply panel transition-colors hover:border-steel/40;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded border border-line bg-raised
+      px-3 py-1.5 text-xs font-medium transition-colors
+      hover:border-steel/50 hover:bg-raised/80
+      focus-visible:outline focus-visible:outline-2 focus-visible:outline-steel;
+  }
+  .btn-primary {
+    @apply btn border-steel/40 bg-steel/15 text-steel hover:bg-steel/25 hover:border-steel;
+  }
+  .btn-danger {
+    @apply btn border-danger/40 bg-danger/10 text-danger hover:bg-danger/20 hover:border-danger;
+  }
+  .btn-ghost {
+    @apply btn border-transparent bg-transparent hover:bg-raised hover:border-line;
+  }
+  .input {
+    @apply w-full rounded border border-line bg-ink px-3 py-1.5 text-xs
+      transition-colors placeholder:text-muted/50
+      focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-steel/60 focus-visible:border-steel/60;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium;
+  }
+  .badge-steel {
+    @apply badge bg-steel/10 text-steel border border-steel/20;
+  }
+  .badge-confirmed {
+    @apply badge bg-confirmed/10 text-confirmed border border-confirmed/20;
+  }
+  .badge-suspected {
+    @apply badge bg-suspected/10 text-suspected border border-suspected/20;
+  }
+  .badge-danger {
+    @apply badge bg-danger/10 text-danger border border-danger/20;
+  }
+  .section-title {
+    @apply text-sm font-semibold tracking-tight text-text;
+  }
+  .page-title {
+    @apply text-xl md:text-2xl font-bold tracking-tight text-text;
+  }
+  .divider {
+    @apply border-t border-line/60;
+  }
+}
