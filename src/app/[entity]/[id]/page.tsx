@@ -10,6 +10,8 @@ import InvestigationTabs from "@/components/InvestigationTabs";
 import CodeBlock from "@/components/CodeBlock";
 import SigmaConverter from "@/components/SigmaConverter";
 import ConfirmButton from "@/components/ConfirmButton";
+import MarkdownArea from "@/components/MarkdownArea";
+import AttackChainFlow from "@/components/AttackChainFlow";
 import {
   FlaskConical, Search, Library, ShieldCheck, ListChecks,
   ArrowLeft, Save, Trash2, Plus, AlertTriangle, Shield, FileText,
@@ -61,8 +63,14 @@ export default async function Edit({ params, searchParams }: any) {
           include: {
             lab: { select: { id: true, name: true, source: true, siem: true } },
             evidence: { include: { artifacts: true } },
-            mappings: { include: { technique: true, evidence: true } },
+            mappings: {
+              include: {
+                technique: { include: { tactics: { include: { tactic: true } } } },
+                evidence: true,
+              },
+            },
             timeline: { include: { evidence: true }, orderBy: { occurredAt: "asc" } },
+            samples: { select: { id: true, name: true, family: true, classification: true } },
           },
         })
       : null;
@@ -201,6 +209,36 @@ export default async function Edit({ params, searchParams }: any) {
               </span>
             </div>
           </div>
+
+          {/* Visual Kill-Chain Attack Flow */}
+          {inv.mappings.length > 0 && <AttackChainFlow mappings={inv.mappings} />}
+
+          {/* Linked Malware Samples if any */}
+          {inv.samples.length > 0 && (
+            <section className="panel p-4 space-y-2.5 animate-slide-up">
+              <div className="flex items-center justify-between border-b border-line/40 pb-2">
+                <h2 className="section-title flex items-center gap-2">
+                  <Bug size={15} className="text-danger" />
+                  Linked Malware Specimens
+                </h2>
+                <span className="text-xs text-muted">{inv.samples.length} sample(s)</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {inv.samples.map((s) => (
+                  <Link
+                    key={s.id}
+                    href={`/malware/${s.id}`}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded border border-line bg-raised/50 hover:border-steel/50 text-xs transition-colors"
+                  >
+                    <Bug size={12} className="text-danger" />
+                    <span className="font-semibold text-text">{s.name}</span>
+                    {s.family && <span className="text-muted">({s.family})</span>}
+                    <span className="badge-danger text-[10px] uppercase">{s.classification}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Investigation Tabs: Evidence is FIRST and readily accessible! */}
           <InvestigationTabs
@@ -505,7 +543,9 @@ export default async function Edit({ params, searchParams }: any) {
                             <option key={l.id} value={l.id}>{l.name}</option>
                           ))}
                     </select>
-                  ) : ["area", "code", "lines", "json"].includes(f.type ?? "") ? (
+                  ) : f.type === "area" ? (
+                    <MarkdownArea name={f.name} defaultValue={val(f)} rows={4} />
+                  ) : ["code", "lines", "json"].includes(f.type ?? "") ? (
                     <div className="space-y-1.5">
                       <textarea
                         className={`input ${f.type === "code" ? "font-mono text-xs" : ""}`}

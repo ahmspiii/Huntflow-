@@ -37,10 +37,10 @@ export default function ConfirmButton({
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/80 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/80 backdrop-blur-sm animate-fade-in">
           <div className="fixed inset-0" onClick={() => setOpen(false)} />
           <div
-            className="relative z-10 w-full max-w-sm rounded-lg border border-danger/40 bg-panel p-5 shadow-2xl space-y-4"
+            className="relative z-10 w-full max-w-sm rounded-lg border border-danger/40 bg-panel p-5 shadow-2xl space-y-4 animate-slide-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start gap-3">

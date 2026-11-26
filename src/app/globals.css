@@ -52,7 +52,7 @@ body {
   }
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded border border-line bg-raised
-      px-3 py-1.5 text-xs font-medium transition-colors
+      px-3 py-1.5 text-xs font-medium transition-all duration-150 active:scale-[0.98]
       hover:border-steel/50 hover:bg-raised/80
       focus-visible:outline focus-visible:outline-2 focus-visible:outline-steel;
   }
@@ -67,11 +67,11 @@ body {
   }
   .input {
     @apply w-full rounded border border-line bg-ink px-3 py-1.5 text-xs
-      transition-colors placeholder:text-muted/50
+      transition-all duration-150 placeholder:text-muted/50
       focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-steel/60 focus-visible:border-steel/60;
   }
   .badge {
-    @apply inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center gap-1 rounded px-2 py-0.5 text-[11px] font-medium tracking-wide;
   }
   .badge-steel {
     @apply badge bg-steel/10 text-steel border border-steel/20;
@@ -85,6 +85,12 @@ body {
   .badge-danger {
     @apply badge bg-danger/10 text-danger border border-danger/20;
   }
+  .badge-accent {
+    @apply badge bg-accent/15 text-accent border border-accent/25;
+  }
+  .badge-muted {
+    @apply badge bg-raised text-muted border border-line;
+  }
   .section-title {
     @apply text-sm font-semibold tracking-tight text-text;
   }
@@ -94,4 +100,31 @@ body {
   .divider {
     @apply border-t border-line/60;
   }
+}
+
+@keyframes hfFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes hfSlideUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hfSlideRight {
+  from { opacity: 0; transform: translateX(-14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in {
+  animation: hfFadeIn 0.18s ease-out both;
+}
+
+.animate-slide-up {
+  animation: hfSlideUp 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-drawer-in {
+  animation: hfSlideRight 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }

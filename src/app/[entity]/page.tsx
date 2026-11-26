@@ -6,6 +6,7 @@ import { removeEntity } from "@/app/actions";
 import PageHeader from "@/components/PageHeader";
 import EmptyState from "@/components/EmptyState";
 import ConfirmButton from "@/components/ConfirmButton";
+import CopyButton from "@/components/CopyButton";
 import {
   FlaskConical, Search, Library, ShieldCheck, ListChecks,
   Plus, Download, FileDown, Bug, ChevronLeft, ChevronRight,
@@ -21,6 +22,36 @@ const iconMap: Record<string, any> = {
   playbooks: ListChecks,
   malware: Bug,
 };
+
+function badgeClass(col: string, val: string): string | null {
+  const v = val.toUpperCase();
+  if (col === "severity") {
+    if (v === "CRITICAL" || v === "HIGH") return "badge-danger";
+    if (v === "MEDIUM") return "badge-suspected";
+    if (v === "LOW") return "badge-steel";
+    return "badge-muted";
+  }
+  if (col === "status" || col === "validation") {
+    if (v === "COMPLETED" || v === "VALIDATED") return "badge-confirmed";
+    if (v === "IN_PROGRESS" || v === "TESTING") return "badge-suspected";
+    return "badge-muted";
+  }
+  if (col === "difficulty") {
+    if (v === "EXPERT") return "badge-danger";
+    if (v === "ADVANCED") return "badge-suspected";
+    if (v === "INTERMEDIATE") return "badge-steel";
+    return "badge-confirmed";
+  }
+  if (col === "classification") {
+    if (["RANSOMWARE", "WIPER", "BACKDOOR", "RAT"].includes(v)) return "badge-danger";
+    if (["LOADER", "DROPPER", "INFOSTEALER"].includes(v)) return "badge-suspected";
+    return "badge-accent";
+  }
+  if (col === "language") {
+    return "badge-steel font-mono";
+  }
+  return null;
+}
 
 export default async function List({ params, searchParams }: any) {
   const e = ENT[params.entity];
@@ -131,20 +162,34 @@ export default async function List({ params, searchParams }: any) {
                 <tbody className="divide-y divide-line/40">
                   {rows.map((r) => (
                     <tr key={r.id} className="hover:bg-raised/40 transition-colors">
-                      {e.cols.map((c, i) => (
-                        <td key={c} className="py-2.5 px-3 max-w-xs truncate">
-                          {i === 0 ? (
-                            <Link
-                              className="text-steel font-medium hover:underline"
-                              href={`/${params.entity}/${r.id}`}
-                            >
-                              {String(r[c])}
-                            </Link>
-                          ) : (
-                            <span className="text-muted">{String(r[c] ?? "—")}</span>
-                          )}
-                        </td>
-                      ))}
+                      {e.cols.map((c, i) => {
+                        const rawVal = r[c];
+                        const strVal = rawVal !== null && rawVal !== undefined && rawVal !== "" ? String(rawVal) : "";
+                        const badge = strVal ? badgeClass(c, strVal) : null;
+                        return (
+                          <td key={c} className="py-2.5 px-3 max-w-xs truncate">
+                            {i === 0 ? (
+                              <Link
+                                className="text-steel font-medium hover:underline"
+                                href={`/${params.entity}/${r.id}`}
+                              >
+                                {strVal || "—"}
+                              </Link>
+                            ) : c === "sha256" && strVal ? (
+                              <div className="inline-flex items-center gap-1 font-mono text-[11px] text-text/90">
+                                <span className="bg-raised px-1.5 py-0.5 rounded border border-line/60">
+                                  {strVal.slice(0, 14)}…
+                                </span>
+                                <CopyButton text={strVal} compact />
+                              </div>
+                            ) : badge ? (
+                              <span className={badge}>{strVal}</span>
+                            ) : (
+                              <span className="text-muted">{strVal || "—"}</span>
+                            )}
+                          </td>
+                        );
+                      })}
                       <td className="py-2.5 px-3 text-right">
                         <div className="flex items-center justify-end gap-1">
                           <Link

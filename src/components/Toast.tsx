@@ -38,7 +38,7 @@ export default function Toast() {
   if (!visible || !message) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 max-w-sm animate-in fade-in slide-in-from-bottom-3">
+    <div className="fixed bottom-5 right-5 z-50 max-w-sm animate-slide-up">
       <div
         className={`flex items-center gap-2.5 px-4 py-3 rounded-lg border shadow-xl text-xs font-medium ${
           message.type === "success"

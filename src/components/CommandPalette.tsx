@@ -138,13 +138,13 @@ export default function CommandPalette() {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 md:pt-24 px-4 bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 md:pt-24 px-4 bg-black/70 backdrop-blur-sm animate-fade-in">
       <div
         className="fixed inset-0 -z-10"
         onClick={() => setOpen(false)}
       />
 
-      <div className="w-full max-w-xl rounded-lg border border-line bg-panel shadow-2xl overflow-hidden flex flex-col max-h-[75vh]">
+      <div className="w-full max-w-xl rounded-lg border border-line bg-panel shadow-2xl overflow-hidden flex flex-col max-h-[75vh] animate-slide-up">
         {/* Search Input Bar */}
         <div className="flex items-center gap-2.5 px-3.5 py-3 border-b border-line/60 bg-raised/30">
           <Search size={16} className="text-steel shrink-0" />

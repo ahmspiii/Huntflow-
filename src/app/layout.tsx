@@ -4,6 +4,7 @@ import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import Sidebar from "@/components/Sidebar";
 import CommandPalette from "@/components/CommandPalette";
 import Toast from "@/components/Toast";
+import ShortcutsModal from "@/components/ShortcutsModal";
 
 const sans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-sans" });
 const mono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400"], variable: "--font-mono" });
@@ -20,10 +21,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="flex min-h-screen flex-col md:flex-row">
         <Sidebar />
         <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-[1400px] p-4 md:p-8">
+          <div className="mx-auto max-w-[1400px] p-4 md:p-8 animate-fade-in">
             {children}
           </div>
           <CommandPalette />
+          <ShortcutsModal />
           <Suspense fallback={null}>
             <Toast />
           </Suspense>
